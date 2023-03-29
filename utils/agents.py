@@ -3,6 +3,8 @@ from torch.autograd import Variable
 from torch.optim import Adam
 from networks import MLPNetwork
 from noise import OUNoise
+from misc import hard_update, gumbel_softmax
+
 
 class DDPGAgent(object):
     def __init__(self, num_in_pol, num_out_pol, num_in_critic, hidden_dim=64,
@@ -46,4 +48,4 @@ class DDPGAgent(object):
         action = self.policy(obs)
         if self.discrete_action:
             if explore:
-                # action = gumbel_
+                 action = gumbel_
