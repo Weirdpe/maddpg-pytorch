@@ -3,7 +3,7 @@ from torch.autograd import Variable
 from torch.optim import Adam
 from networks import MLPNetwork
 from noise import OUNoise
-from misc import hard_update, gumbel_softmax
+from misc import hard_update, gumbel_softmax, onehot_from_logits
 
 
 class DDPGAgent(object):
@@ -48,4 +48,30 @@ class DDPGAgent(object):
         action = self.policy(obs)
         if self.discrete_action:
             if explore:
-                 action = gumbel_
+                action = gumbel_softmax(action, hard=True)
+            else:
+                action = onehot_from_logits(action)
+        else:
+            if explore:
+                action += Variable(Tensor(self.exploration.noise(),
+                                          requires_grad=False))
+                action = action.clamp(-1, 1)
+        return action
+
+    def get_params(self):
+        return {
+            'policy': self.policy.state_dict(),
+            'critic': self.critic.state_dict(),
+            'target_policy': self.target_policy.state_dict(),
+            'target_critic': self.target_critic.state_dict(),
+            'policy_optimizer': self.policy_optimizer.state_dict(),
+            'critic_optimizer': self.critic_optimizer.state_dict()
+        }
+
+    def load_params(self, params):
+        self.policy.load_state_dict(params['policy'])
+        self.critic.load_state_dict(params['critic'])
+        self.target_policy.load_state_dict(params['target_policy'])
+        self.target_critic.load_state_dict(params['target_critic'])
+        self.policy_optimizer.load_state_dict(params['policy_optimizer'])
+        self.critic_optimizer.load_state_dict(params['critic_optimizer'])
